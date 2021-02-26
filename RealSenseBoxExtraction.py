@@ -11,12 +11,26 @@ pcd = o3d.io.read_point_cloud("./test_data2.ply")
 print(pcd)
 print(np.asarray(pcd.points))
 o3d.visualization.draw_geometries([pcd])
+print(pcd.points[0])
 
 print("Load a polygon volume and use it to crop the original point cloud")
 vol = o3d.visualization.read_selection_polygon_volume("./Crop/cropped_box.json")
 box = vol.crop_point_cloud(pcd)
+print(box.get_center())  # center of the geometry coordinates
 o3d.visualization.draw_geometries([box])
 
 aabb = box.get_axis_aligned_bounding_box()
 aabb.color = (0, 0, 1)
 o3d.visualization.draw_geometries([box, aabb])
+
+# plane_model, inliers = box.segment_plane(distance_threshold=0.005, ransac_n=3, num_iterations=100)
+# [a, b, c, d] = plane_model
+# print("Plane equation: {:.2f}x + {:.2f}y + {:.2f}z + {:.2f} = 0".format(a, b, c, d))
+
+# inliers_cloud = box.select_by_index(inliers)
+# inliers_cloud.paint_uniform_color([0.8, 0, 0])
+# o3d.visualization.draw_geometries([pcd, inliers_cloud])
+
+print("Recompute the normal of the downsampled point cloud")
+box.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+o3d.visualization.draw_geometries([box], point_show_normal=True)

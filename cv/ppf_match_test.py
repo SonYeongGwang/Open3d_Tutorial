@@ -5,8 +5,8 @@ import copy
 import matplotlib.pyplot as plt
 
 
-model = o3d.io.read_point_cloud('cv/parasaurolophus_6700.ply')
-scene = o3d.io.read_point_cloud('cv/rs1_normals.ply')
+model = o3d.io.read_point_cloud('./parasaurolophus_6700.ply')
+scene = o3d.io.read_point_cloud('./rs1_normals.ply')
 mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=50)
 model_dw = model.voxel_down_sample(voxel_size=0.005)
 model_nor = copy.deepcopy(model)
@@ -41,8 +41,8 @@ N = 2
 
 detector = cv.ppf_match_3d_PPF3DDetector(relativeSamplingStep=0.025, relativeDistanceStep=0.05)
 
-test = cv.ppf_match_3d.loadPLYSimple('cv/parasaurolophus_6700.ply', 1)
-test_scene = cv.ppf_match_3d.loadPLYSimple('cv/rs1_normals.ply', 1)
+test = cv.ppf_match_3d.loadPLYSimple('./parasaurolophus_6700.ply', 1)
+test_scene = cv.ppf_match_3d.loadPLYSimple('./rs1_normals.ply', 1)
 # print(pcd[:, 5])
 # print(test[:, 5])
 

@@ -4,7 +4,6 @@ import open3d as o3d
 import copy
 import matplotlib.pyplot as plt
 
-
 model = o3d.io.read_point_cloud('./parasaurolophus_6700.ply')
 scene = o3d.io.read_point_cloud('./rs1_normals.ply')
 mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=50)

@@ -62,8 +62,7 @@ class SurfaceMatching:
         model_estimate.paint_uniform_color(est_color)
 
         model_estimate.transform(pose)
-        # print("Model")
-        # o3d.visualization.draw_geometries([model, mesh])
+        
         # print("Scene")
         # o3d.visualization.draw_geometries([scene, mesh])
 
@@ -100,7 +99,7 @@ class SurfaceMatching:
             
             else:
                 o3d.visualization.draw_geometries(
-                    [model, model_estimate, obb_org, obb_est])
+                    [model, model_estimate, obb_org, obb_est, scene, mesh])
         
         else:
             if flag:
@@ -109,12 +108,50 @@ class SurfaceMatching:
 
             else:
                 o3d.visualization.draw_geometries(
-                    [model, model_estimate])
+                    [model, model_estimate, scene, mesh])
 
 
-sp = SurfaceMatching('./parasaurolophus_6700.ply', './rs1_normals.ply', ModelNor=1, SceneNor=1)
+sp = SurfaceMatching('/home/a/Open3d_Tutorial/cv/model2use.ply', '/home/a/Open3d_Tutorial/cv/scene2use.ply', ModelNor=1, SceneNor=1)
 print(sp)
 sp.Train()
 results = sp.Match()
 print(results[0].pose)
-sp.Visualize(results, line=False, box=False)
+sp.Visualize(results, box=False, line=False)
+
+
+'''####################################################################################
+test zone
+'''####################################################################################
+
+# print("Model")
+
+# transformation = np.asarray([[ 9.85484315e-01, -1.69657577e-01,  6.08036725e-03, -1.08048926e+02],
+#  [ 1.24772814e-01,  6.99547004e-01, -7.03609078e-01, -5.39479328e+02],
+#  [ 1.15119109e-01,  6.94154375e-01,  7.10561254e-01, -2.13442662e+02],
+#  [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]])
+
+# mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=50)
+# mesh_trans = copy.deepcopy(mesh)
+# mesh_trans.transform(transformation)
+# model = o3d.io.read_point_cloud('./parasaurolophus_6700.ply')
+# model.translate([0, 100, 600])
+# scene = o3d.io.read_point_cloud('./rs1_normals.ply')
+# scene.translate([0, 0, 600])
+# print(model.get_center())
+# print(scene.get_center())
+# o3d.visualization.draw_geometries([model, mesh, mesh_trans, scene])
+# o3d.visualization.draw_geometries([scene, mesh])
+
+# o3d.visualization.draw_geometries([scene, mesh])
+# o3d.io.write_point_cloud('model2use.ply', model, write_ascii=True, print_progress=True)
+
+
+# model = o3d.io.read_point_cloud('/home/a/Open3d_Tutorial/cv/model2use.ply')
+# scene = o3d.io.read_point_cloud('/home/a/Open3d_Tutorial/cv/scene2use.ply')
+# mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=50)
+# o3d.visualization.draw_geometries([model, mesh])
+# o3d.visualization.draw_geometries([scene, mesh])
+
+'''####################################################################################
+test zone
+'''####################################################################################

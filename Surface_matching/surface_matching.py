@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 class SurfaceMatching:
 
-    def __init__(self, ModelPath, ScenePath, ModelNor=0, SceneNor=0, radius=5.0, max_nn=40):
+    def __init__(self, fFormat, ModelPath, ScenePath, ModelNor=0, SceneNor=0, radius=5.0, max_nn=40):
         self.ModelPath = ModelPath 
         self.ScenePath = ScenePath 
         self.ModelNor = ModelNor 
@@ -14,9 +14,28 @@ class SurfaceMatching:
         self.radius = radius 
         self.max_nn = max_nn
 
-        print("Loading point cloud data...")
-        self.model = cv.ppf_match_3d.loadPLYSimple(self.ModelPath, ModelNor)
-        self.scene = cv.ppf_match_3d.loadPLYSimple(self.ScenePath, SceneNor)
+        if fFormat == 'PLY':
+            print("Loading point cloud data...")
+            self.model = cv.ppf_match_3d.loadPLYSimple(self.ModelPath, ModelNor)
+            self.scene = cv.ppf_match_3d.loadPLYSimple(self.ScenePath, SceneNor)
+
+        elif fFormat == 'STL':
+            print("Loading point cloud data...")
+            # Load from STL using open3D API and extract points, normals
+            mesh = o3d.io.read_triangle_mesh(self.ModelPath)
+            pcd = mesh.sample_points_uniformly(number_of_points=1000)
+            pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=30))
+            o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+
+            pts = np.asarray(pcd.points)
+            norm = np.asarray(pcd.normals)
+            self.model = np.concatenate((pts, norm), axis=1).astype('float32')
+
+            # Load directly from PLY file
+            self.scene = cv.ppf_match_3d.loadPLYSimple(self.ScenePath, SceneNor)
+
+        else:
+            print("Error: File type should be .PLY or .STL")
 
     def __str__(self):
         return "Model_matrix:{}, Scene_matrix:{}".format(np.shape(self.model), np.shape(self.scene))
@@ -110,18 +129,19 @@ class SurfaceMatching:
                 o3d.visualization.draw_geometries(
                     [model, model_estimate, scene, mesh])
 
-
-sp = SurfaceMatching('/home/a/Open3d_Tutorial/cv/model2use.ply', '/home/a/Open3d_Tutorial/cv/scene2use.ply', ModelNor=1, SceneNor=1)
+model_path = '/home/a/mouse_data_set/mouse_data_main/m185_2.stl'
+scene_path = '/home/a/Open3d_Tutorial/Surface_matching/scene2use.ply'
+sp = SurfaceMatching(fFormat='STL', ModelPath=model_path, ScenePath=scene_path, ModelNor=1, SceneNor=1)
 print(sp)
 sp.Train()
-results = sp.Match()
-print(results[0].pose)
-sp.Visualize(results, box=False, line=False)
+# results = sp.Match()
+# print(results[0].pose)
+# sp.Visualize(results, box=False, line=False)
 
 
-'''####################################################################################
-test zone
-'''####################################################################################
+####################################################################################
+#                                    test zone                                     #
+####################################################################################
 
 # print("Model")
 
@@ -152,6 +172,22 @@ test zone
 # o3d.visualization.draw_geometries([model, mesh])
 # o3d.visualization.draw_geometries([scene, mesh])
 
-'''####################################################################################
-test zone
-'''####################################################################################
+# print("Loading point cloud data...")
+# # Load from STL using open3D API and extract points, normals
+# mesh = o3d.io.read_triangle_mesh(model_path)
+# pcd = mesh.sample_points_uniformly(number_of_points=1000)
+# pcd.estimate_normals(
+#     search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=30))
+# o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+
+# pts = np.asarray(pcd.points)
+# norm = np.asarray(pcd.normals)
+# model = np.concatenate((pts, norm), axis=1).astype('float32')
+# print(type(model[0][0]))
+
+# scene = cv.ppf_match_3d.loadPLYSimple(scene_path, 1)
+# print(type(scene[0][0]))
+
+####################################################################################
+#                                   test zone                                      #
+####################################################################################

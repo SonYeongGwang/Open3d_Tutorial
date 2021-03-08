@@ -13,22 +13,24 @@ class SurfaceMatching:
         self.SceneNor = SceneNor 
         self.radius = radius 
         self.max_nn = max_nn
+        self.fFormat = fFormat
 
-        if fFormat == 'PLY':
+        if self.fFormat == 'PLY':
             print("Loading point cloud data...")
             self.model = cv.ppf_match_3d.loadPLYSimple(self.ModelPath, ModelNor)
             self.scene = cv.ppf_match_3d.loadPLYSimple(self.ScenePath, SceneNor)
 
-        elif fFormat == 'STL':
+        elif self.fFormat == 'STL':
             print("Loading point cloud data...")
             # Load from STL using open3D API and extract points, normals
             mesh = o3d.io.read_triangle_mesh(self.ModelPath)
-            pcd = mesh.sample_points_uniformly(number_of_points=1000)
-            pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=30))
-            o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+            self.pcd = mesh.sample_points_uniformly(number_of_points=1500)
+            self.pcd.scale(0.0265, ([0, 0, 0]))
+            self.pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.03, max_nn=30))
+            o3d.visualization.draw_geometries([self.pcd], point_show_normal=True)
 
-            pts = np.asarray(pcd.points)
-            norm = np.asarray(pcd.normals)
+            pts = np.asarray(self.pcd.points)
+            norm = np.asarray(self.pcd.normals)
             self.model = np.concatenate((pts, norm), axis=1).astype('float32')
 
             # Load directly from PLY file
@@ -52,7 +54,7 @@ class SurfaceMatching:
 
         print("complete training")
 
-    def Match(self, relativeSceneSampleStep=1.0/40.0, relativeSceneDistance=0.05):
+    def Match(self, relativeSceneSampleStep=1.0/2.0, relativeSceneDistance=0.05):
         '''
         relativeSceneSampleStep = need to be defined***
         relativeSceneDistance = inversely proportion to collision rate in hash table
@@ -71,9 +73,16 @@ class SurfaceMatching:
         org_color = [0.7, 0.2, 0.0]
         est_color = [1, 0.7, 0]
 
-        model = o3d.io.read_point_cloud(self.ModelPath)
+        if self.fFormat == 'PLY':
+            model = o3d.io.read_point_cloud(self.ModelPath)
+        else:
+            model = o3d.io.read_triangle_mesh(self.ModelPath)
+            model = model.sample_points_uniformly(number_of_points=1500)
+            model.scale(0.0265, ([0, 0, 0]))
+
         scene = o3d.io.read_point_cloud(self.ScenePath)
-        mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=50)
+
+        mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5)
 
         model_estimate = copy.deepcopy(model)
 
@@ -130,55 +139,33 @@ class SurfaceMatching:
                     [model, model_estimate, scene, mesh])
 
 model_path = '/home/a/mouse_data_set/mouse_data_main/m185_2.stl'
-scene_path = '/home/a/Open3d_Tutorial/Surface_matching/scene2use.ply'
+scene_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply'
 sp = SurfaceMatching(fFormat='STL', ModelPath=model_path, ScenePath=scene_path, ModelNor=1, SceneNor=1)
 print(sp)
 sp.Train()
-# results = sp.Match()
-# print(results[0].pose)
-# sp.Visualize(results, box=False, line=False)
+results = sp.Match()
+print(results[0].pose)
+sp.Visualize(results, box=True, line=False)
 
 
 ####################################################################################
 #                                    test zone                                     #
 ####################################################################################
 
-# print("Model")
-
-# transformation = np.asarray([[ 9.85484315e-01, -1.69657577e-01,  6.08036725e-03, -1.08048926e+02],
-#  [ 1.24772814e-01,  6.99547004e-01, -7.03609078e-01, -5.39479328e+02],
-#  [ 1.15119109e-01,  6.94154375e-01,  7.10561254e-01, -2.13442662e+02],
-#  [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]])
-
-# mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=50)
-# mesh_trans = copy.deepcopy(mesh)
-# mesh_trans.transform(transformation)
-# model = o3d.io.read_point_cloud('./parasaurolophus_6700.ply')
-# model.translate([0, 100, 600])
-# scene = o3d.io.read_point_cloud('./rs1_normals.ply')
-# scene.translate([0, 0, 600])
-# print(model.get_center())
-# print(scene.get_center())
-# o3d.visualization.draw_geometries([model, mesh, mesh_trans, scene])
-# o3d.visualization.draw_geometries([scene, mesh])
-
-# o3d.visualization.draw_geometries([scene, mesh])
-# o3d.io.write_point_cloud('model2use.ply', model, write_ascii=True, print_progress=True)
-
-
-# model = o3d.io.read_point_cloud('/home/a/Open3d_Tutorial/cv/model2use.ply')
-# scene = o3d.io.read_point_cloud('/home/a/Open3d_Tutorial/cv/scene2use.ply')
-# mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=50)
-# o3d.visualization.draw_geometries([model, mesh])
-# o3d.visualization.draw_geometries([scene, mesh])
-
 # print("Loading point cloud data...")
 # # Load from STL using open3D API and extract points, normals
+# mesh_coor = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05)
 # mesh = o3d.io.read_triangle_mesh(model_path)
-# pcd = mesh.sample_points_uniformly(number_of_points=1000)
-# pcd.estimate_normals(
-#     search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=30))
-# o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+# pcd = mesh.sample_points_uniformly(number_of_points=5000)
+# pcd_scale = copy.deepcopy(pcd)
+# pcd_scale.scale(0.0265, ([0, 0, 0]))
+# pcd_sce = o3d.io.read_point_cloud(scene_path)
+# # pcd.estimate_normals(
+# #     search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=30))
+# # o3d.visualization.draw_geometries([pcd], point_show_normal=True)
+# o3d.visualization.draw_geometries([mesh_coor, pcd_scale, pcd_sce])
+# print(pcd.get_min_bound())
+# print(pcd.get_max_bound())
 
 # pts = np.asarray(pcd.points)
 # norm = np.asarray(pcd.normals)
@@ -191,3 +178,6 @@ sp.Train()
 ####################################################################################
 #                                   test zone                                      #
 ####################################################################################
+
+# model = o3d.io.read_point_cloud('/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply')
+# o3d.visualization.draw_geometries([model], point_show_normal=True)

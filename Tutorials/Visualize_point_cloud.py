@@ -6,7 +6,7 @@ open3d uses 'm' for length unit
 '''
 
 print("Load a ply point cloud, print it, and render it")
-pcd = o3d.io.read_point_cloud("parasaurolophus_6700PCTrans.ply")
+pcd = o3d.io.read_point_cloud("/home/a/mouse_data_set/mouse_data_scene/lab.ply")
 print(pcd)
 print(np.asarray(pcd.points))
 mesh = o3d.geometry.TriangleMesh.create_coordinate_frame()
@@ -18,8 +18,8 @@ downpcd = pcd.voxel_down_sample(voxel_size=0.09)
 o3d.visualization.draw_geometries([downpcd])
 
 print("Recompute the normal of the downsampled point cloud")
-downpcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
-o3d.visualization.draw_geometries([downpcd], point_show_normal=True)
+pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+o3d.visualization.draw_geometries([pcd], point_show_normal=True)
 '''
 The covariance analysis algorithm produces two opposite directions as normal candidates. 
 Without knowing the global structure of the geometry, both can be correct. 

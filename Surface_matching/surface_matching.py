@@ -4,6 +4,8 @@ import open3d as o3d
 import copy
 import matplotlib.pyplot as plt
 
+
+
 class SurfaceMatching:
 
     def __init__(self, fFormat, ModelPath, ScenePath, ModelNor=0, SceneNor=0, radius=5.0, max_nn=40):
@@ -24,7 +26,7 @@ class SurfaceMatching:
             print("Loading point cloud data...")
             # Load from STL using open3D API and extract points, normals
             mesh = o3d.io.read_triangle_mesh(self.ModelPath)
-            self.pcd = mesh.sample_points_uniformly(number_of_points=1500)
+            self.pcd = mesh.sample_points_uniformly(number_of_points=2000)
             self.pcd.scale(0.0265, ([0, 0, 0]))
             self.pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.03, max_nn=30))
             o3d.visualization.draw_geometries([self.pcd], point_show_normal=True)
@@ -54,7 +56,7 @@ class SurfaceMatching:
 
         print("complete training")
 
-    def Match(self, relativeSceneSampleStep=1.0/2.0, relativeSceneDistance=0.05):
+    def Match(self, relativeSceneSampleStep=1.0/40.0, relativeSceneDistance=0.05):
         '''
         relativeSceneSampleStep = need to be defined***
         relativeSceneDistance = inversely proportion to collision rate in hash table
@@ -140,6 +142,8 @@ class SurfaceMatching:
 
 model_path = '/home/a/mouse_data_set/mouse_data_main/m185_2.stl'
 scene_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply'
+# model_path = '/home/a/Open3d_Tutorial/Surface_matching/model2use.ply'
+# scene_path = 'Surface_matching/scene2use.ply'
 sp = SurfaceMatching(fFormat='STL', ModelPath=model_path, ScenePath=scene_path, ModelNor=1, SceneNor=1)
 print(sp)
 sp.Train()

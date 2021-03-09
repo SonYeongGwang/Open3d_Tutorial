@@ -6,7 +6,7 @@ open3d uses 'm' for length unit
 '''
 
 print("Load a ply point cloud, print it, and render it")
-pcd = o3d.io.read_point_cloud("/home/a/mouse_data_set/mouse_data_scene/lab.ply")
+pcd = o3d.io.read_point_cloud("/home/a/lab2.ply")
 print(pcd)
 print(np.asarray(pcd.points))
 mesh = o3d.geometry.TriangleMesh.create_coordinate_frame()

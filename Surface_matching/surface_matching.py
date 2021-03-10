@@ -26,9 +26,9 @@ class SurfaceMatching:
             print("Loading point cloud data...")
             # Load from STL using open3D API and extract points, normals
             mesh = o3d.io.read_triangle_mesh(self.ModelPath)
-            self.pcd = mesh.sample_points_uniformly(number_of_points=3000)
-            self.pcd.scale(0.0265, ([0, 0, 0]))
-            self.pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.05, max_nn=50))
+            self.pcd = mesh.sample_points_uniformly(number_of_points=2000)
+            self.pcd.scale(0.024, ([0, 0, 0]))
+            self.pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn = 30))
             o3d.visualization.draw_geometries([self.pcd], point_show_normal=True)
 
             pts = np.asarray(self.pcd.points)
@@ -44,7 +44,7 @@ class SurfaceMatching:
     def __str__(self):
         return "Model_matrix:{}, Scene_matrix:{}".format(np.shape(self.model), np.shape(self.scene))
 
-    def Train(self, relativeSamplingStep=0.05, relativeDistanceStep=0.05):
+    def Train(self, relativeSamplingStep=0.05, relativeDistanceStep=0.035):
         '''
         relativeSamplingStep = proportion to distance between points(0.025 - 0.05)
         relativeDistanceStep = inversely proportion to collision rate in hash table
@@ -56,7 +56,7 @@ class SurfaceMatching:
 
         print("complete training")
 
-    def Match(self, relativeSceneSampleStep=1.0/40.0, relativeSceneDistance=0.05):
+    def Match(self, relativeSceneSampleStep=1.0, relativeSceneDistance=0.035):
         '''
         relativeSceneSampleStep = need to be defined***
         relativeSceneDistance = inversely proportion to collision rate in hash table
@@ -84,7 +84,7 @@ class SurfaceMatching:
 
         scene = o3d.io.read_point_cloud(self.ScenePath)
 
-        mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5)
+        mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
 
         model_estimate = copy.deepcopy(model)
 
@@ -145,12 +145,13 @@ scene_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.p
 # model_path = '/home/a/Open3d_Tutorial/Surface_matching/model2use.ply'
 # scene_path = '/home/a/Open3d_Tutorial/Surface_matching/scene2use.ply'
 # scene_path = '/home/a/plz.ply'
-# sp = SurfaceMatching(fFormat='STL', ModelPath=model_path, ScenePath=scene_path, ModelNor=1, SceneNor=1)
-# print(sp)
-# sp.Train()
-# results = sp.Match()
-# print(results[0].pose)
-# sp.Visualize(results, box=True, line=False)
+
+sp = SurfaceMatching(fFormat='STL', ModelPath=model_path, ScenePath=scene_path, ModelNor=1, SceneNor=1)
+print(sp)
+sp.Train()
+results = sp.Match()
+print(results[0].pose)
+sp.Visualize(results, box=False, line=False)
 
 
 ####################################################################################
@@ -162,14 +163,12 @@ scene_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.p
 mesh_coor = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05)
 mesh = o3d.io.read_triangle_mesh(model_path)
 pcd = mesh.sample_points_uniformly(number_of_points=5000)
-pcd_scale = copy.deepcopy(pcd)
-pcd_scale.scale(0.0265, ([0, 0, 0]))
-pcd_scale.translate([0, -0.2, -0.8])
 pcd_sce = o3d.io.read_point_cloud(scene_path)
+pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn = 30))
 # # pcd.estimate_normals(
 # #     search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=30))
-# # o3d.visualization.draw_geometries([pcd], point_show_normal=True)
-o3d.visualization.draw_geometries([mesh_coor, pcd_scale, pcd_sce])
+o3d.visualization.draw_geometries([pcd, mesh_coor], point_show_normal=True)
+# o3d.visualization.draw_geometries([mesh_coor, pcd])
 # print(pcd.get_min_bound())
 # print(pcd.get_max_bound())
 

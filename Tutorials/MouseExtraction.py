@@ -3,7 +3,7 @@ import open3d as o3d
 import matplotlib.pyplot as plt
 
 print("Load a ply point cloud, print it, and render it")
-pcd = o3d.io.read_point_cloud("/home/a/lab2.ply")
+pcd = o3d.io.read_point_cloud("/home/a/mouse_data_set/mouse_data_scene/closed.ply")
 mesh = o3d.geometry.TriangleMesh.create_coordinate_frame()
 mesh_z = o3d.geometry.TriangleMesh.create_coordinate_frame()
 mesh_z = mesh_z.translate((0, -0.15, -0.8))
@@ -35,4 +35,4 @@ print("Recompute the normal of the downsampled point cloud")
 box.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
 o3d.visualization.draw_geometries([box], point_show_normal=True)
 
-o3d.io.write_point_cloud('/home/a/mouse_data_set/mouse_data_scene/mouse_scene_crop.ply', box)
+# o3d.io.write_point_cloud('/home/a/mouse_data_set/mouse_data_scene/mouse_scene_crop.ply', box, write_ascii=True)

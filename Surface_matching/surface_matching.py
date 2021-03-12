@@ -19,14 +19,21 @@ class SurfaceMatching:
 
         if self.fFormat == 'PLY':
             print("Loading point cloud data...")
-            self.model = cv.ppf_match_3d.loadPLYSimple(self.ModelPath, ModelNor)
+            self.pcd = o3d.io.read_point_cloud(self.ModelPath)
+            self.pcd.scale(0.024, ([0, 0, 0]))
+            self.pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn = 30))
+            o3d.visualization.draw_geometries([self.pcd], point_show_normal=True)
+
+            pts = np.asarray(self.pcd.points)
+            norm = np.asarray(self.pcd.normals)
+            self.model = np.concatenate((pts, norm), axis=1).astype('float32')
             self.scene = cv.ppf_match_3d.loadPLYSimple(self.ScenePath, SceneNor)
 
         elif self.fFormat == 'STL':
             print("Loading point cloud data...")
             # Load from STL using open3D API and extract points, normals
             mesh = o3d.io.read_triangle_mesh(self.ModelPath)
-            self.pcd = mesh.sample_points_uniformly(number_of_points=2000)
+            self.pcd = mesh.sample_points_uniformly(number_of_points=4000)
             self.pcd.scale(0.024, ([0, 0, 0]))
             self.pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn = 30))
             o3d.visualization.draw_geometries([self.pcd], point_show_normal=True)
@@ -44,7 +51,7 @@ class SurfaceMatching:
     def __str__(self):
         return "Model_matrix:{}, Scene_matrix:{}".format(np.shape(self.model), np.shape(self.scene))
 
-    def Train(self, relativeSamplingStep=0.05, relativeDistanceStep=0.035):
+    def Train(self, relativeSamplingStep=0.04, relativeDistanceStep=0.05):
         '''
         relativeSamplingStep = proportion to distance between points(0.025 - 0.05)
         relativeDistanceStep = inversely proportion to collision rate in hash table
@@ -56,9 +63,9 @@ class SurfaceMatching:
 
         print("complete training")
 
-    def Match(self, relativeSceneSampleStep=1.0, relativeSceneDistance=0.035):
+    def Match(self, relativeSceneSampleStep=1.0, relativeSceneDistance=0.05):
         '''
-        relativeSceneSampleStep = need to be defined***
+        relativeSceneSampleStep = proportion to sampling rate (1/a)->
         relativeSceneDistance = inversely proportion to collision rate in hash table
                                 (0.025-0.05 are sensible)
         '''
@@ -77,10 +84,11 @@ class SurfaceMatching:
 
         if self.fFormat == 'PLY':
             model = o3d.io.read_point_cloud(self.ModelPath)
+            model.scale(0.024, ([0, 0, 0]))
         else:
             model = o3d.io.read_triangle_mesh(self.ModelPath)
             model = model.sample_points_uniformly(number_of_points=3500)
-            model.scale(0.0265, ([0, 0, 0]))
+            model.scale(0.024, ([0, 0, 0]))
 
         scene = o3d.io.read_point_cloud(self.ScenePath)
 
@@ -94,7 +102,7 @@ class SurfaceMatching:
         model_estimate.transform(pose)
         
         # print("Scene")
-        # o3d.visualization.draw_geometries([scene, mesh])
+        o3d.visualization.draw_geometries([scene, mesh, model])
 
         if line:
             np.random.seed(7)
@@ -140,18 +148,18 @@ class SurfaceMatching:
                 o3d.visualization.draw_geometries(
                     [model, model_estimate, scene, mesh])
 
-model_path = '/home/a/mouse_data_set/mouse_data_main/m185_2.stl'
-scene_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply'
+model_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_randac.ply'
+scene_path = '/home/a/mouse_data_set/mouse_data_scene/mouse_scene_randac.ply'
 # model_path = '/home/a/Open3d_Tutorial/Surface_matching/model2use.ply'
-# scene_path = '/home/a/Open3d_Tutorial/Surface_matching/scene2use.ply'
+# scene_path = '/home/a/Open3d_Tutorial/Surface_matching/scene2test.ply'
 # scene_path = '/home/a/plz.ply'
 
-sp = SurfaceMatching(fFormat='STL', ModelPath=model_path, ScenePath=scene_path, ModelNor=1, SceneNor=1)
+sp = SurfaceMatching(fFormat='PLY', ModelPath=model_path, ScenePath=scene_path, ModelNor=1, SceneNor=1)
 print(sp)
 sp.Train()
 results = sp.Match()
 print(results[0].pose)
-sp.Visualize(results, box=False, line=False)
+sp.Visualize(results, box=True, line=False)
 
 
 ####################################################################################

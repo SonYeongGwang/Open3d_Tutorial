@@ -51,7 +51,7 @@ class SurfaceMatching:
     def __str__(self):
         return "Model_matrix:{}, Scene_matrix:{}".format(np.shape(self.model), np.shape(self.scene))
 
-    def Train(self, relativeSamplingStep=0.04, relativeDistanceStep=0.05):
+    def Train(self, relativeSamplingStep=0.05, relativeDistanceStep=0.05):
         '''
         relativeSamplingStep = proportion to distance between points(0.025 - 0.05)
         relativeDistanceStep = inversely proportion to collision rate in hash table
@@ -75,9 +75,32 @@ class SurfaceMatching:
         print("complete matching")
         return self.results
 
+    def UpScale(self, HT):
+        HT_in = copy.deepcopy(HT)
+        HT_x = HT_in[:-1, 0]
+        HT_y = HT_in[:-1, 1]
+        HT_z = HT_in[:-1, 2]
+
+        res_x = np.sqrt(HT_x[0]**2 + HT_x[1]**2 + HT_x[2]**2)
+        res_y = np.sqrt(HT_y[0]**2 + HT_y[1]**2 + HT_y[2]**2)
+        res_z = np.sqrt(HT_z[0]**2 + HT_z[1]**2 + HT_z[2]**2)
+
+        scale_factor = np.mean((res_x, res_y, res_z))
+        print("scale_factor:{}".format(np.mean((res_x, res_y, res_z))))
+
+        HT_rot = HT_in[:3, :3]
+        scale_factor = np.mean((res_x, res_y, res_z))
+        HT_rot_upscaled = HT_rot / scale_factor
+
+        HT_in[:3, :3] = HT_rot_upscaled
+
+        return HT_in
+
     def Visualize(self, results, line=True, box=True):
         flag = 0
         pose = results[0].pose
+
+        pose = self.UpScale(pose)
 
         org_color = [0.7, 0.2, 0.0]
         est_color = [1, 0.7, 0]
@@ -168,14 +191,14 @@ sp.Visualize(results, box=True, line=False)
 
 # print("Loading point cloud data...")
 # # Load from STL using open3D API and extract points, normals
-mesh_coor = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05)
-mesh = o3d.io.read_triangle_mesh(model_path)
-pcd = mesh.sample_points_uniformly(number_of_points=5000)
-pcd_sce = o3d.io.read_point_cloud(scene_path)
-pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn = 30))
+# mesh_coor = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05)
+# mesh = o3d.io.read_triangle_mesh(model_path)
+# pcd = mesh.sample_points_uniformly(number_of_points=5000)
+# pcd_sce = o3d.io.read_point_cloud(scene_path)
+# pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn = 30))
 # # pcd.estimate_normals(
 # #     search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.3, max_nn=30))
-o3d.visualization.draw_geometries([pcd, mesh_coor], point_show_normal=True)
+# o3d.visualization.draw_geometries([pcd, mesh_coor], point_show_normal=True)
 # o3d.visualization.draw_geometries([mesh_coor, pcd])
 # print(pcd.get_min_bound())
 # print(pcd.get_max_bound())

@@ -18,8 +18,9 @@ import copy
 # plt.figure()
 # plt.plot(bounding_polygon[:,0], bounding_polygon[:,1])
 # plt.show()
+
 '''
-model_path = '/home/a/mouse_data_set/mouse_data_main/m185_2.stl'
+model_path = '/home/a/realsense_box.STL'
 
 mesh = o3d.io.read_triangle_mesh(model_path)
 pcd = mesh.sample_points_uniformly(number_of_points=5000)
@@ -99,7 +100,9 @@ HT_z = HT[:-1, 2]
 res_x = np.sqrt(HT_x[0]**2 + HT_x[1]**2 + HT_x[2]**2)
 res_y = np.sqrt(HT_y[0]**2 + HT_y[1]**2 + HT_y[2]**2)
 res_z = np.sqrt(HT_z[0]**2 + HT_z[1]**2 + HT_z[2]**2)
-print(res_x, res_y, res_z)
+print("x_element:", res_x)
+print("y_element:", res_y)
+print("z_element:", res_z)
 
 
 # rescaling function
@@ -111,23 +114,23 @@ print(HT_rot_upscaled)
 HT[:3, :3] = HT_rot_upscaled
 print(HT)
 
-def UpScale(HT):
-    HT_in = HT
-    HT_x = HT_in[:-1, 0]
-    HT_y = HT_in[:-1, 1]
-    HT_z = HT_in[:-1, 2]
+# def UpScale(HT):
+#     HT_in = HT
+#     HT_x = HT_in[:-1, 0]
+#     HT_y = HT_in[:-1, 1]
+#     HT_z = HT_in[:-1, 2]
 
-    res_x = np.sqrt(HT_x[0]**2 + HT_x[1]**2 + HT_x[2]**2)
-    res_y = np.sqrt(HT_y[0]**2 + HT_y[1]**2 + HT_y[2]**2)
-    res_z = np.sqrt(HT_z[0]**2 + HT_z[1]**2 + HT_z[2]**2)
+#     res_x = np.sqrt(HT_x[0]**2 + HT_x[1]**2 + HT_x[2]**2)
+#     res_y = np.sqrt(HT_y[0]**2 + HT_y[1]**2 + HT_y[2]**2)
+#     res_z = np.sqrt(HT_z[0]**2 + HT_z[1]**2 + HT_z[2]**2)
 
-    scale_factor = np.mean((res_x, res_y, res_z))
-    print("scale_factor:{}".format(np.mean((res_x, res_y, res_z))))
+#     scale_factor = np.mean((res_x, res_y, res_z))
+#     print("scale_factor:{}".format(np.mean((res_x, res_y, res_z))))
 
-    HT_rot = HT_in[:3, :3]
-    scale_factor = np.mean((res_x, res_y, res_z))
-    HT_rot_upscaled = HT_rot / scale_factor
+#     HT_rot = HT_in[:3, :3]
+#     scale_factor = np.mean((res_x, res_y, res_z))
+#     HT_rot_upscaled = HT_rot / scale_factor
 
-    HT_in[:3, :3] = HT_rot_upscaled
+#     HT_in[:3, :3] = HT_rot_upscaled
 
-    return HT_in
+#     return HT_in

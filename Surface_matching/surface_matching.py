@@ -51,7 +51,7 @@ class SurfaceMatching:
     def __str__(self):
         return "Model_matrix:{}, Scene_matrix:{}".format(np.shape(self.model), np.shape(self.scene))
 
-    def Train(self, relativeSamplingStep=0.05, relativeDistanceStep=0.05):
+    def Train(self, relativeSamplingStep=0.045, relativeDistanceStep=0.05):
         '''
         relativeSamplingStep = proportion to distance between points(0.025 - 0.05)
         relativeDistanceStep = inversely proportion to collision rate in hash table
@@ -63,7 +63,7 @@ class SurfaceMatching:
 
         print("complete training")
 
-    def Match(self, relativeSceneSampleStep=1.0, relativeSceneDistance=0.05):
+    def Match(self, relativeSceneSampleStep=1.0/2, relativeSceneDistance=0.05):
         '''
         relativeSceneSampleStep = proportion to sampling rate (1/a)->
         relativeSceneDistance = inversely proportion to collision rate in hash table
@@ -94,13 +94,15 @@ class SurfaceMatching:
 
         HT_in[:3, :3] = HT_rot_upscaled
 
-        return HT_in
+        return HT_in      
 
     def Visualize(self, results, line=True, box=True):
         flag = 0
-        pose = results[0].pose
 
+        pose = results[0].pose
         pose = self.UpScale(pose)
+        print("Scaled Pose: ")
+        print(pose)
 
         org_color = [0.7, 0.2, 0.0]
         est_color = [1, 0.7, 0]
@@ -110,22 +112,37 @@ class SurfaceMatching:
             model.scale(0.024, ([0, 0, 0]))
         else:
             model = o3d.io.read_triangle_mesh(self.ModelPath)
-            model = model.sample_points_uniformly(number_of_points=3500)
+            model = model.sample_points_uniformly(number_of_points=5000)
+            
             model.scale(0.024, ([0, 0, 0]))
 
         scene = o3d.io.read_point_cloud(self.ScenePath)
 
+        reg_p2p = o3d.pipelines.registration.registration_icp(
+            model, scene, 0.5, pose,
+            o3d.pipelines.registration.TransformationEstimationPointToPoint(),
+            o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=2000))  #더 알아 볼 필요 있음
+
+        new_pose = reg_p2p.transformation
+        print("ICP Pose: ")
+        print(new_pose)
+
         mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
+        mesh_trans = copy.deepcopy(mesh)
+        mesh_trans.transform(new_pose)
 
         model_estimate = copy.deepcopy(model)
 
         model.paint_uniform_color(org_color)
         model_estimate.paint_uniform_color(est_color)
 
-        model_estimate.transform(pose)
+        model_estimate_without_ICP = copy.deepcopy(model_estimate)
+
+        model_estimate_without_ICP.transform(pose)
+        model_estimate.transform(new_pose)
         
         # print("Scene")
-        o3d.visualization.draw_geometries([scene, mesh, model])
+        o3d.visualization.draw_geometries([scene, mesh, model, mesh_trans])
 
         if line:
             np.random.seed(7)
@@ -156,11 +173,13 @@ class SurfaceMatching:
 
             if flag:
                 o3d.visualization.draw_geometries(
-                    [model, model_estimate, line_set, obb_org, obb_est])
+                    [model, model_estimate, line_set, obb_org, obb_est, mesh_trans])
             
             else:
                 o3d.visualization.draw_geometries(
-                    [model, model_estimate, obb_org, obb_est, scene, mesh])
+                    [model, model_estimate_without_ICP, obb_org, obb_est, scene, mesh, mesh_trans])
+                o3d.visualization.draw_geometries(
+                    [model, model_estimate, obb_org, obb_est, scene, mesh, mesh_trans])
         
         else:
             if flag:
@@ -169,12 +188,17 @@ class SurfaceMatching:
 
             else:
                 o3d.visualization.draw_geometries(
-                    [model, model_estimate, scene, mesh])
+                    [model, model_estimate, scene])
 
 model_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_randac.ply'
 scene_path = '/home/a/mouse_data_set/mouse_data_scene/mouse_scene_randac.ply'
+
 # model_path = '/home/a/Open3d_Tutorial/Surface_matching/model2use.ply'
-# scene_path = '/home/a/Open3d_Tutorial/Surface_matching/scene2test.ply'
+# scene_path = '/home/a/Open3d_Tutorial/Surface_matching/scene2use.ply'
+
+# model_path = '/home/a/mouse_data_set/mouse_data_main/m185_2.stl'
+# scene_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply'
+
 # scene_path = '/home/a/plz.ply'
 
 sp = SurfaceMatching(fFormat='PLY', ModelPath=model_path, ScenePath=scene_path, ModelNor=1, SceneNor=1)
@@ -182,7 +206,7 @@ print(sp)
 sp.Train()
 results = sp.Match()
 print(results[0].pose)
-sp.Visualize(results, box=True, line=False)
+sp.Visualize(results, box=False, line=False)
 
 
 ####################################################################################

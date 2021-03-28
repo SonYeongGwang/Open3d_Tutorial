@@ -20,7 +20,7 @@ class SurfaceMatching:
         if self.fFormat == 'PLY':
             print("Loading point cloud data...")
             self.pcd = o3d.io.read_point_cloud(self.ModelPath)
-            self.pcd.scale(0.024, ([0, 0, 0]))
+            # self.pcd.scale(0.024, ([0, 0, 0]))
             self.pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn = 30))
             o3d.visualization.draw_geometries([self.pcd], point_show_normal=True)
 
@@ -34,7 +34,7 @@ class SurfaceMatching:
             # Load from STL using open3D API and extract points, normals
             mesh = o3d.io.read_triangle_mesh(self.ModelPath)
             self.pcd = mesh.sample_points_uniformly(number_of_points=4000)
-            self.pcd.scale(0.024, ([0, 0, 0]))
+            # self.pcd.scale(0.024, ([0, 0, 0]))
             self.pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn = 30))
             o3d.visualization.draw_geometries([self.pcd], point_show_normal=True)
 
@@ -109,17 +109,17 @@ class SurfaceMatching:
 
         if self.fFormat == 'PLY':
             model = o3d.io.read_point_cloud(self.ModelPath)
-            model.scale(0.024, ([0, 0, 0]))
+            # model.scale(0.024, ([0, 0, 0]))
         else:
             model = o3d.io.read_triangle_mesh(self.ModelPath)
             model = model.sample_points_uniformly(number_of_points=5000)
             
-            model.scale(0.024, ([0, 0, 0]))
+            # model.scale(0.024, ([0, 0, 0]))
 
         scene = o3d.io.read_point_cloud(self.ScenePath)
 
         reg_p2p = o3d.pipelines.registration.registration_icp(
-            model, scene, 0.5, pose,
+            model, scene, 0.02, pose,
             o3d.pipelines.registration.TransformationEstimationPointToPoint(),
             o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=2000))  #더 알아 볼 필요 있음
 
@@ -146,7 +146,7 @@ class SurfaceMatching:
 
         if line:
             np.random.seed(7)
-            indx = np.random.randint(0, len(model.points), (20,))
+            indx = np.random.randint(0, len(model.points), (len(model.points)/2,))
 
             sel_point_org = model.select_by_index(indx)
             sel_point_org = np.asarray(sel_point_org.points)
@@ -190,8 +190,8 @@ class SurfaceMatching:
                 o3d.visualization.draw_geometries(
                     [model, model_estimate, scene])
 
-model_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_randac.ply'
-scene_path = '/home/a/mouse_data_set/mouse_data_scene/mouse_scene_randac.ply'
+model_path = '/home/a/mouse_data_set/mouse_data_main/RealSizeMouseModel.ply'
+scene_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply'
 
 # model_path = '/home/a/Open3d_Tutorial/Surface_matching/model2use.ply'
 # scene_path = '/home/a/Open3d_Tutorial/Surface_matching/scene2use.ply'
@@ -206,7 +206,7 @@ print(sp)
 sp.Train()
 results = sp.Match()
 print(results[0].pose)
-sp.Visualize(results, box=False, line=False)
+sp.Visualize(results, box=True, line=True)
 
 
 ####################################################################################

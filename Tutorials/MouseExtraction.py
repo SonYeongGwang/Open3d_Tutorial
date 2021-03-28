@@ -14,7 +14,7 @@ o3d.visualization.draw_geometries([pcd, mesh_z, mesh])
 print(pcd.points[0])
 
 print("Load a polygon volume and use it to crop the original point cloud")
-vol = o3d.visualization.read_selection_polygon_volume("./Crop/cropped_mouse_loose.json")
+vol = o3d.visualization.read_selection_polygon_volume("./Crop/cropped_mouse_tight.json")
 box = vol.crop_point_cloud(pcd)
 print(box.get_center())  # center of the geometry coordinates
 o3d.visualization.draw_geometries([box])

@@ -17,7 +17,7 @@ threshold = 0.02
 trans_init = np.asarray([[0.862, 0.011, -0.507, 0.5],
                          [-0.139, 0.967, -0.215, 0.7],
                          [0.487, 0.255, 0.835, -1.4], [0.0, 0.0, 0.0, 1.0]])  # homogeneous coordinate (transform)
-
+                         
 draw_registration_result(source, target, trans_init)
 
 print("Initial alignmet")
@@ -31,7 +31,8 @@ Point-to-point ICP
 print("Apply point-to-point ICP")
 reg_p2p = o3d.pipelines.registration.registration_icp(
     source, target, threshold, trans_init,
-    o3d.pipelines.registration.TransformationEstimationPointToPoint())
+    o3d.pipelines.registration.TransformationEstimationPointToPoint(),
+    o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=2000))
 
 print("Transformation is:")
 print(reg_p2p)

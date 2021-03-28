@@ -6,12 +6,12 @@ open3d uses 'm' for length unit
 '''
 
 print("Load a ply point cloud, print it, and render it")
-pcd = o3d.io.read_point_cloud("/home/a/lab2.ply")
+pcd = o3d.io.read_point_cloud("/home/a/mouse_data_set/mouse_data_scene/closed.ply")
 print(pcd)
 print(np.asarray(pcd.points))
 mesh = o3d.geometry.TriangleMesh.create_coordinate_frame()
 print("Global Center: {}".format(mesh.get_center()))
-o3d.visualization.draw_geometries([pcd, mesh])
+o3d.visualization.draw_geometries([pcd])
 
 print("Downsample the point cloud with a voxel of 0.05")
 downpcd = pcd.voxel_down_sample(voxel_size=0.09)

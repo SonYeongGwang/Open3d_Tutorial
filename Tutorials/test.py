@@ -85,7 +85,8 @@ o3d.visualization.draw_geometries([mouse2], point_show_normal=True)
 '''
 # o3d.io.write_point_cloud('/home/a/Open3d_Tutorial/Surface_matching/scene2test.ply', scene, write_ascii=True)
 
-
+'''
+#scaling
 HT = np.array([[ 2.90040405e-03,  5.49825709e-02, -3.71633300e-01, -6.06459842e-04],
  [-2.97180570e-01,  2.27689755e-01,  3.13670072e-02, -4.54455377e-02],
  [ 2.29821890e-01,  2.93729633e-01,  4.52504841e-02, -5.97049404e-01],
@@ -113,24 +114,16 @@ print(HT_rot_upscaled)
 
 HT[:3, :3] = HT_rot_upscaled
 print(HT)
+'''
 
-# def UpScale(HT):
-#     HT_in = HT
-#     HT_x = HT_in[:-1, 0]
-#     HT_y = HT_in[:-1, 1]
-#     HT_z = HT_in[:-1, 2]
+'''
+# mouse model creator
+mouse_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_randac.ply'
+mouse = o3d.io.read_point_cloud(mouse_path)
+mouse_real_scale = copy.deepcopy(mouse)
 
-#     res_x = np.sqrt(HT_x[0]**2 + HT_x[1]**2 + HT_x[2]**2)
-#     res_y = np.sqrt(HT_y[0]**2 + HT_y[1]**2 + HT_y[2]**2)
-#     res_z = np.sqrt(HT_z[0]**2 + HT_z[1]**2 + HT_z[2]**2)
-
-#     scale_factor = np.mean((res_x, res_y, res_z))
-#     print("scale_factor:{}".format(np.mean((res_x, res_y, res_z))))
-
-#     HT_rot = HT_in[:3, :3]
-#     scale_factor = np.mean((res_x, res_y, res_z))
-#     HT_rot_upscaled = HT_rot / scale_factor
-
-#     HT_in[:3, :3] = HT_rot_upscaled
-
-#     return HT_in
+mouse_real_scale = mouse_real_scale.scale(0.024, ([0, 0, 0]))
+ 
+o3d.visualization.draw_geometries([mouse, mouse_real_scale])
+o3d.io.write_point_cloud('/home/a/RealSizeMouseModel.ply', mouse_real_scale, write_ascii=True)
+'''

@@ -19,17 +19,21 @@ import copy
 # plt.plot(bounding_polygon[:,0], bounding_polygon[:,1])
 # plt.show()
 
-'''
-model_path = '/home/a/realsense_box.STL'
+
+model_path = '/home/a/Box_data/model/realsense_box.STL'
 
 mesh = o3d.io.read_triangle_mesh(model_path)
-pcd = mesh.sample_points_uniformly(number_of_points=5000)
+pcd = mesh.sample_points_uniformly(number_of_points=4000)
 mesh_coor = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.5)
 mesh_coor_center = copy.deepcopy(mesh_coor)
-mesh_coor_center.translate([0, 0, (pcd.get_center())[2]])
-pcd.translate([0, 0, -(pcd.get_center())[2]])
+# mesh_coor_center.translate([(pcd.get_center())[0], 0, 0])
+# pcd.translate([-(pcd.get_center())[0], 0, -(pcd.get_center())[2]])
+
 o3d.visualization.draw_geometries([pcd, mesh_coor, mesh_coor_center])
-'''
+##########
+# pcd = pcd.scale(0.024, ([0, 0, 0]))
+o3d.visualization.draw_geometries([pcd, mesh_coor, mesh_coor_center])
+# o3d.io.write_point_cloud('/home/a/Mouse_before_ransac.ply', pcd, write_ascii=True)
 
 
 '''
@@ -117,13 +121,18 @@ print(HT)
 '''
 
 '''
-# mouse model creator
-mouse_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_randac.ply'
+# transformator
+mouse_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_ransac.ply'
 mouse = o3d.io.read_point_cloud(mouse_path)
-mouse_real_scale = copy.deepcopy(mouse)
-
-mouse_real_scale = mouse_real_scale.scale(0.024, ([0, 0, 0]))
  
-o3d.visualization.draw_geometries([mouse, mouse_real_scale])
-o3d.io.write_point_cloud('/home/a/RealSizeMouseModel.ply', mouse_real_scale, write_ascii=True)
+o3d.visualization.draw_geometries([mouse])
+mesh_coor = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05)
+mouse_trans = copy.deepcopy(mouse)
+mouse_trans.translate([0, -0.008, -0.008])
+o3d.visualization.draw_geometries([mouse, mouse_trans])
+mouse_rot = copy.deepcopy(mouse)
+R = mouse_rot.get_rotation_matrix_from_xyz((0, np.pi / 8, 0))
+mouse_rot.rotate(R, center=mouse_rot.get_center())
+o3d.visualization.draw_geometries([mouse, mouse_trans, mouse_rot])
+o3d.io.write_point_cloud('/home/a/mouse_data_set/mouse_data_scene/senthetic/mouse.ply', mouse_rot, write_ascii=True)
 '''

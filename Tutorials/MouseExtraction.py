@@ -3,7 +3,7 @@ import open3d as o3d
 import matplotlib.pyplot as plt
 
 print("Load a ply point cloud, print it, and render it")
-pcd = o3d.io.read_point_cloud("/home/a/mouse_data_set/mouse_data_scene/closed.ply")
+pcd = o3d.io.read_point_cloud("/home/a/Box_data/scene/realsense_box.ply")
 mesh = o3d.geometry.TriangleMesh.create_coordinate_frame()
 mesh_z = o3d.geometry.TriangleMesh.create_coordinate_frame()
 mesh_z = mesh_z.translate((0, -0.15, -0.8))

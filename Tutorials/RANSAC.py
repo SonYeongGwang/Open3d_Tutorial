@@ -2,7 +2,7 @@ import numpy as np
 import open3d as o3d
 import matplotlib.pyplot as plt
 
-pcd = o3d.io.read_point_cloud("/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply")
+pcd = o3d.io.read_point_cloud("/home/a/mouse_data_set/mouse_data_main/Mouse_before_ransac.ply")
 plane_model, inliers = pcd.segment_plane(distance_threshold=0.005, ransac_n=3, num_iterations=1000)
 [a, b, c, d] = plane_model
 print("Plane equation: {:.2f}x + {:.2f}y + {:.2f}z + {:.2f} = 0".format(a, b, c, d))
@@ -13,7 +13,7 @@ outlier_cloud = pcd.select_by_index(inliers, invert=True)
 o3d.visualization.draw_geometries([inlier_cloud])
 o3d.visualization.draw_geometries([outlier_cloud])
 
-# o3d.io.write_point_cloud('/home/a/mouse_data_set/mouse_data_scene/mouse_scene_randac.ply', outlier_cloud, write_ascii=True)
+# o3d.io.write_point_cloud('/home/a/mouse_data_set/mouse_data_main/mouse_model_ransac.ply', outlier_cloud, write_ascii=True)
 # X = np.asarray(pcd.points)[:,0]
 # Y = np.asarray(pcd.points)[:,1]
 # Z = np.asarray(pcd.points)[:,2]

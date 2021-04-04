@@ -22,6 +22,7 @@ class SurfaceMatching:
             self.pcd = o3d.io.read_point_cloud(self.ModelPath)
             # self.pcd.scale(0.024, ([0, 0, 0]))
             self.pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn = 30))
+            self.pcd.orient_normals_consistent_tangent_plane(10)
             o3d.visualization.draw_geometries([self.pcd], point_show_normal=True)
 
             pts = np.asarray(self.pcd.points)
@@ -51,7 +52,7 @@ class SurfaceMatching:
     def __str__(self):
         return "Model_matrix:{}, Scene_matrix:{}".format(np.shape(self.model), np.shape(self.scene))
 
-    def Train(self, relativeSamplingStep=0.05, relativeDistanceStep=0.05):
+    def Train(self, relativeSamplingStep=0.1, relativeDistanceStep=0.05):
         '''
         relativeSamplingStep = proportion to distance between points(0.025 - 0.05)
         relativeDistanceStep = inversely proportion to collision rate in hash table
@@ -63,7 +64,7 @@ class SurfaceMatching:
 
         print("complete training")
 
-    def Match(self, relativeSceneSampleStep=1.0/40, relativeSceneDistance=0.05):
+    def Match(self, relativeSceneSampleStep=1.0/20, relativeSceneDistance=0.05):
         '''
         relativeSceneSampleStep = proportion to sampling rate (1/a)->
         relativeSceneDistance = inversely proportion to collision rate in hash table
@@ -191,8 +192,11 @@ class SurfaceMatching:
                 o3d.visualization.draw_geometries(
                     [model, model_estimate, scene])
 
+# model_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_ransac.ply'
+# scene_path = '/home/a/mouse_data_set/mouse_data_scene/senthetic/mouse.ply'
+
 model_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_ransac.ply'
-scene_path = '/home/a/mouse_data_set/mouse_data_scene/senthetic/mouse.ply'
+scene_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply'
 
 # model_path = '/home/a/Open3d_Tutorial/Surface_matching/model2use.ply'
 # scene_path = '/home/a/Open3d_Tutorial/Surface_matching/scene2use.ply'

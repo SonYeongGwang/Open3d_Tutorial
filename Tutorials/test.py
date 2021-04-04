@@ -19,7 +19,7 @@ import copy
 # plt.plot(bounding_polygon[:,0], bounding_polygon[:,1])
 # plt.show()
 
-
+'''
 model_path = '/home/a/Box_data/model/realsense_box.STL'
 
 mesh = o3d.io.read_triangle_mesh(model_path)
@@ -34,7 +34,7 @@ o3d.visualization.draw_geometries([pcd, mesh_coor, mesh_coor_center])
 # pcd = pcd.scale(0.024, ([0, 0, 0]))
 o3d.visualization.draw_geometries([pcd, mesh_coor, mesh_coor_center])
 # o3d.io.write_point_cloud('/home/a/Mouse_before_ransac.ply', pcd, write_ascii=True)
-
+'''
 
 '''
 scene_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply'
@@ -136,3 +136,12 @@ mouse_rot.rotate(R, center=mouse_rot.get_center())
 o3d.visualization.draw_geometries([mouse, mouse_trans, mouse_rot])
 o3d.io.write_point_cloud('/home/a/mouse_data_set/mouse_data_scene/senthetic/mouse.ply', mouse_rot, write_ascii=True)
 '''
+
+
+A = []
+for i in np.arange(5):
+    A.append(i)
+    print(A)
+
+B = np.arange(5)
+print(B)

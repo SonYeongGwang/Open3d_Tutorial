@@ -138,10 +138,18 @@ o3d.io.write_point_cloud('/home/a/mouse_data_set/mouse_data_scene/senthetic/mous
 '''
 
 
-A = []
-for i in np.arange(5):
-    A.append(i)
-    print(A)
-
-B = np.arange(5)
-print(B)
+A = np.array([[4, 2, 5, 0],
+              [3, 2, 1, 0],
+              [2, 3, 6, 0],
+              [0, 0, 0, 1]])
+U, S, V = np.linalg.svd(A)
+print(U)
+print(S)
+print(V)
+sphere = o3d.geometry.TriangleMesh.create_sphere(0.05)
+print(id(sphere))
+sphere_copy = copy.deepcopy(sphere)
+print(id(sphere_copy))
+sphere.transform(A)
+mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(0.8)
+o3d.visualization.draw_geometries([sphere, mesh])

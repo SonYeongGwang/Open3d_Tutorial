@@ -165,14 +165,15 @@ print("The number of input data after downsaple: ",number_of_points_down)
 target_kdtree = o3d.geometry.KDTreeFlann(target_downsampled_voxel_indx)
 num_of_selection = len(np.asarray(source_downsampled_voxel_indx.points)) # The number of neighbors to find
 
-max_iteration = 4
-
+max_iteration = 17
+prev_least_square = 0
+deltas = []
 for itr in np.arange(max_iteration):
 # 'closest_pointset' below will have same address with the one inside of the method 'Match'
     closest_pointset = Match(
         source_downsampled_voxel_indx, target_kdtree, num_of_selection)
-    line_set = Visualize(source_downsampled_voxel_indx, target_downsampled_voxel_indx,
-            num_of_selection, closest_pointset)
+    # line_set = Visualize(source_downsampled_voxel_indx, target_downsampled_voxel_indx,
+    #         num_of_selection, closest_pointset)
 
     ###################### 3. align point cloud data #######################
     ######(for test reason, it doesn't include weighing and rejecting)######
@@ -182,21 +183,33 @@ for itr in np.arange(max_iteration):
     target_index = closest_pointset
     source_points, target_points = SelectPointSet(
         source_index, source_downsampled_voxel_indx, target_index, target_downsampled_voxel_indx)
-    # The shape of source data and The shape of target data should be same
-    print("The shape of source data: ", np.shape(source_points))
-    print("The shape of target data: ", np.shape(target_points))
+    
+    if np.shape(source_points) != np.shape(target_points):
+        print("error: The shape of source data and The shape of target data should be same")
+        break
 
     Rt, Ts, transformation = Align(
         source_points, target_points, num_of_selection, closest_pointset)
 
     source_downsampled_voxel_indx.transform(transformation)
-    o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
-
-    error_prev = (target_points - source_points)
-    least_square_prev = np.mean(error_prev**2)
-
-    prev_least_square = 0
+    # o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
     error = (target_points - np.transpose(np.dot(Rt, source_points.T)) + [Ts])
     least_square = np.mean(error**2)
-    print(least_square)
+    print("Iteration:{}, previous:{}, now:{}".format(itr, prev_least_square, least_square))
     delta = np.abs(least_square - prev_least_square)
+    deltas.append(delta)
+    prev_least_square = least_square
+    if itr == 0:
+        init_error = (target_points - source_points)
+        init_least_square = np.mean(init_error**2)
+        initial_delta = np.abs(init_least_square - least_square)
+        print("initial error:", init_least_square)
+
+deltas[0] = initial_delta
+
+plt.figure()
+plt.plot(np.arange(max_iteration), deltas)
+plt.xlabel("The number of iterations")
+plt.ylabel("MSE")
+plt.show()
+o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx])

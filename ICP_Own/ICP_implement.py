@@ -99,23 +99,23 @@ def Align(source_pts, target_pts, point_num, closest_set):
       If det(x) = -1, the algorithm fails.(This case usually does not occur.)
     output: Rotation, Translation, Homogeneous matrix(Rt, Ts, T)
     '''
-    ############# Step 1) #############
+    ################# Step 1) #################
     source_mean = np.mean(source_pts, axis=0)
     target_mean = np.mean(target_pts, axis=0)
     
-    ############# Step 2) #############
+    ################# Step 2) #################
     source_points_cen = source_pts - source_mean
     source_points_cen = np.transpose(source_points_cen)
     target_points_cen = target_pts - target_mean
     H = np.dot(source_points_cen, target_points_cen) # 3x3 matrix
 
-    ############# Step 3) #############
+    ################# Step 3) #################
     U, S ,Vt = np.linalg.svd(H) # two matrics are orthogonal
     
-    ############# Step 4) #############
+    ################# Step 4) #################
     X = np.dot(np.transpose(Vt), np.transpose(U)) # X should be orthogonal so, det(X) = 1 
 
-    ############# Step 5) #############
+    ################# Step 5) #################
     det_X = np.linalg.det(X)
     if det_X < 0:
         print("algorithm falied!")
@@ -165,37 +165,38 @@ print("The number of input data after downsaple: ",number_of_points_down)
 target_kdtree = o3d.geometry.KDTreeFlann(target_downsampled_voxel_indx)
 num_of_selection = len(np.asarray(source_downsampled_voxel_indx.points)) # The number of neighbors to find
 
-closest_pointset = Match(
-    source_downsampled_voxel_indx, target_kdtree, num_of_selection)
+max_iteration = 4
 
-line_set = Visualize(source_downsampled_voxel_indx, target_downsampled_voxel_indx,
-          num_of_selection, closest_pointset)
+for itr in np.arange(max_iteration):
+# 'closest_pointset' below will have same address with the one inside of the method 'Match'
+    closest_pointset = Match(
+        source_downsampled_voxel_indx, target_kdtree, num_of_selection)
+    line_set = Visualize(source_downsampled_voxel_indx, target_downsampled_voxel_indx,
+            num_of_selection, closest_pointset)
 
+    ###################### 3. align point cloud data #######################
+    ######(for test reason, it doesn't include weighing and rejecting)######
+    ########################################################################
 
-###################### 3. align point cloud data #######################
-######(for test reason, it doesn't include weighing and rejecting)######
-########################################################################
+    source_index = np.arange(0, num_of_selection)
+    target_index = closest_pointset
+    source_points, target_points = SelectPointSet(
+        source_index, source_downsampled_voxel_indx, target_index, target_downsampled_voxel_indx)
+    # The shape of source data and The shape of target data should be same
+    print("The shape of source data: ", np.shape(source_points))
+    print("The shape of target data: ", np.shape(target_points))
 
-source_index = np.arange(0, num_of_selection)
-target_index = closest_pointset
-source_points, target_points = SelectPointSet(
-    source_index, source_downsampled_voxel_indx, target_index, target_downsampled_voxel_indx)
-# The shape of source data and The shape of target data should be same
-print("The shape of source data: ", np.shape(source_points))
-print("The shape of target data: ", np.shape(target_points))
+    Rt, Ts, transformation = Align(
+        source_points, target_points, num_of_selection, closest_pointset)
 
-Rt, Ts, transformation = Align(
-    source_points, target_points, num_of_selection, closest_pointset)
+    source_downsampled_voxel_indx.transform(transformation)
+    o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
 
-source_downsampled_voxel_indx.transform(transformation)
-o3d.visualization.draw_geometries(
-    [source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
+    error_prev = (target_points - source_points)
+    least_square_prev = np.mean(error_prev**2)
 
-error_prev = (target_points - source_points)
-least_square_prev = np.mean(error_prev**2)
-
-prev_least_square = 0
-error = (target_points - np.transpose(np.dot(Rt, source_points.T)) + [Ts])
-least_square = np.mean(error**2)
-print(least_square)
-delta = np.abs(least_square - prev_least_square)
+    prev_least_square = 0
+    error = (target_points - np.transpose(np.dot(Rt, source_points.T)) + [Ts])
+    least_square = np.mean(error**2)
+    print(least_square)
+    delta = np.abs(least_square - prev_least_square)

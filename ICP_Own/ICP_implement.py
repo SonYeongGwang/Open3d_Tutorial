@@ -3,7 +3,7 @@ import numpy as np
 import copy
 import matplotlib.pyplot as plt
 
-###################### 0. define required function ######################
+########################## 0. define required function ##########################
 def argsort(a):
     '''
     This method is to give order index of sorted array with repect to original 
@@ -37,6 +37,41 @@ def argsort(a):
     
     return np.array(sorting_indx_modi)
 
+def Visualize(source_pts, target_pts, point_num, closest_set):
+    selection = np.arange(0, point_num)
+    points_source = source_pts.select_by_index(selection)
+    points_target = target_pts.select_by_index(closest_set)
+    points_source = np.array(points_source.points)
+    points_target = np.array(points_target.points)
+    points = np.concatenate((points_source, points_target), axis=0)
+    sorting_indx = argsort(closest_set)
+    sorting_indx = sorting_indx + point_num
+    lines = np.asarray([[i, sorting_indx[i]]for i in selection])
+    lines.astype('int32')
+    colors = [[0, 0, 1] for i in range(len(lines))]
+    line_sets = o3d.geometry.LineSet(
+        points=o3d.utility.Vector3dVector(points),
+        lines=o3d.utility.Vector2iVector(lines),
+    )
+
+    line_sets.colors = o3d.utility.Vector3dVector(colors)
+    o3d.visualization.draw_geometries([source_pts, target_pts, line_sets])
+    return line_sets
+
+def Match(source_pts, target_tree, point_num):
+    # target_tree: class 'open3d.cpu.pybind.geometry.KDTreeFlann
+    selection = np.arange(point_num) # select (num_of_selection) points in source point
+    closest_pointset = []
+    for i in np.arange(0, point_num):
+        # source_downsampled_voxel_indx.colors[i] = [0, 0, 1]
+        [k, idx, c] = target_tree.search_knn_vector_3d(np.asarray(source_pts.points)[i], 1)
+        closest_point = idx.pop()
+        closest_pointset.append(closest_point)
+        # target_downsampled_voxel_indx.colors[closest_point] = [0, 0, 1]
+
+    return closest_pointset
+
+
 def SelectPointSet(source_idx, source_pts, target_idx, target_pts):
     '''
     This method is to store matched points. Most Important difference with
@@ -49,6 +84,50 @@ def SelectPointSet(source_idx, source_pts, target_idx, target_pts):
     [tr.append(np.asarray(target_pts.points[idx])) for idx in target_idx]
 
     return np.asarray(sc), np.asarray(tr)
+
+def Align(source_pts, target_pts, point_num, closest_set):
+    '''
+    For alignment, we impliment Least-Squares Fitting
+    Ref: Least-Squares Fitting of Two 3-D Point Sets (K. S. ARUN, T. S. HUANG, AND S. D. BLOSTEIN)
+    <Algorithm>
+    Step 1: make two points set have same centriod
+    Step 2: calculate the 3x3 matrix of point set. Let's say the result as H
+    Step 3: find SVD(Singular Value Decomposition) of H
+    Step 4: calculate X = V*traspose(U)
+    Step 5: calculate, det(x), the determinate of X.
+      If det(x) = +1, the R = X.
+      If det(x) = -1, the algorithm fails.(This case usually does not occur.)
+    output: Rotation, Translation, Homogeneous matrix(Rt, Ts, T)
+    '''
+    ############# Step 1) #############
+    source_mean = np.mean(source_pts, axis=0)
+    target_mean = np.mean(target_pts, axis=0)
+    
+    ############# Step 2) #############
+    source_points_cen = source_pts - source_mean
+    source_points_cen = np.transpose(source_points_cen)
+    target_points_cen = target_pts - target_mean
+    H = np.dot(source_points_cen, target_points_cen) # 3x3 matrix
+
+    ############# Step 3) #############
+    U, S ,Vt = np.linalg.svd(H) # two matrics are orthogonal
+    
+    ############# Step 4) #############
+    X = np.dot(np.transpose(Vt), np.transpose(U)) # X should be orthogonal so, det(X) = 1 
+
+    ############# Step 5) #############
+    det_X = np.linalg.det(X)
+    if det_X < 0:
+        print("algorithm falied!")
+        return 0
+
+    Rot = copy.deepcopy(X)
+    Trsl = target_mean - np.dot(Rot, source_mean.T)
+    transformation = np.eye(4)
+    transformation[:3, :3] = Rot
+    transformation[:3 ,3] = Trsl.T
+
+    return Rot, Trsl, transformation
 
 ###################### 1. downsample point cloud data ######################
 ############################################################################
@@ -85,101 +164,38 @@ print("The number of input data after downsaple: ",number_of_points_down)
 #######################################################################
 target_kdtree = o3d.geometry.KDTreeFlann(target_downsampled_voxel_indx)
 num_of_selection = len(np.asarray(source_downsampled_voxel_indx.points)) # The number of neighbors to find
-selection = np.arange(num_of_selection) # select (num_of_selection) points in source point
 
-closest_pointset = []
-for i in np.arange(0, num_of_selection):
-    # source_downsampled_voxel_indx.colors[i] = [0, 0, 1]
-    [k, idx, c] = target_kdtree.search_knn_vector_3d(np.asarray(source_downsampled_voxel_indx.points)[i], 1)
-    closest_point = idx.pop()
-    closest_pointset.append(closest_point)
-    # target_downsampled_voxel_indx.colors[closest_point] = [0, 0, 1]
+closest_pointset = Match(
+    source_downsampled_voxel_indx, target_kdtree, num_of_selection)
 
-
-# visualization
-# uncomment when the line set for visualization doesn't need
-# insert 'line_set' to o3d.visualization.draw_geometries underneath
-
-points_source = source_downsampled_voxel_indx.select_by_index(selection)
-points_target = target_downsampled_voxel_indx.select_by_index(closest_pointset)
-points_source = np.array(points_source.points)
-points_target = np.array(points_target.points)
-points = np.concatenate((points_source, points_target), axis=0)
-sorting_indx = argsort(closest_pointset)
-sorting_indx = sorting_indx + num_of_selection
-lines = np.asarray([[i, sorting_indx[i]]for i in np.arange(num_of_selection)])
-lines.astype('int32')
-colors = [[0, 0, 1] for i in range(len(lines))]
-line_set = o3d.geometry.LineSet(
-    points=o3d.utility.Vector3dVector(points),
-    lines=o3d.utility.Vector2iVector(lines),
-)
-
-line_set.colors = o3d.utility.Vector3dVector(colors)
-o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
+line_set = Visualize(source_downsampled_voxel_indx, target_downsampled_voxel_indx,
+          num_of_selection, closest_pointset)
 
 
 ###################### 3. align point cloud data #######################
 ######(for test reason, it doesn't include weighing and rejecting)######
 ########################################################################
 
-# For alignment, we impliment Least-Squares Fitting
-# Ref: Least-Squares Fitting of Two 3-D Point Sets (K. S. ARUN, T. S. HUANG, AND S. D. BLOSTEIN)
-# <Algorithm>
-# Step 1: make two points set have same centriod
-# Step 2: calculate the 3x3 matrix of point set. Let's say the result as H
-# Step 3: find SVD(Singular Value Decomposition) of H
-# Step 4: calculate X = V*traspose(U)
-# Step 5: calculate, det(x), the determinate of X.
-#   If det(x) = +1, the R = X.
-#   If det(x) = -1, the algorithm fails.(This case usually does not occur.)
-
-print("############# Step 1) #############")
 source_index = np.arange(0, num_of_selection)
 target_index = closest_pointset
 source_points, target_points = SelectPointSet(
     source_index, source_downsampled_voxel_indx, target_index, target_downsampled_voxel_indx)
-
 # The shape of source data and The shape of target data should be same
-print("The shape of source data: ",np.shape(source_points))
-print("The shape of target data: ",np.shape(target_points))
+print("The shape of source data: ", np.shape(source_points))
+print("The shape of target data: ", np.shape(target_points))
 
-source_mean = np.mean(source_points, axis=0)
-target_mean = np.mean(target_points, axis=0)
+Rt, Ts, transformation = Align(
+    source_points, target_points, num_of_selection, closest_pointset)
 
-'''
-# plot
-fig = plt.figure()
-ax = fig.gca(projection='3d')
-X = source_points[:,0]
-Y = source_points[:,1]
-Z = source_points[:,2]
-X2 = target_points[:,0]
-Y2 = target_points[:,1]
-Z2 = target_points[:,2]
-plt.xlabel("X")
-plt.ylabel("Y")
-plt.ylim(-0.06, 0.04)
-plt.xlim(-0.06, 0.04)
-ax.scatter(X,Y,Z)
-ax.scatter(X2,Y2,Z2)
-plt.show()
-'''
-
-source_points_cen = source_points - source_mean
-source_points_cen = np.transpose(source_points_cen)
-target_points_cen = target_points - target_mean
-H = np.dot(source_points_cen, target_points_cen)        # 3x3 matrix
-
-U, S ,Vt = np.linalg.svd(H) # two matrics are orthogonal    
-X = np.dot(np.transpose(Vt), np.transpose(U)) # X should be orthogonal so, det(X) = 1
-print(np.linalg.det(X))
-Rot = copy.deepcopy(X)
-Trsl = target_mean - np.dot(Rot, source_mean.T)
-
-transformation = np.eye(4)
-transformation[:3, :3] = Rot
-transformation[:3 ,3] = Trsl.T
-print(transformation)
 source_downsampled_voxel_indx.transform(transformation)
-o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
+o3d.visualization.draw_geometries(
+    [source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
+
+error_prev = (target_points - source_points)
+least_square_prev = np.mean(error_prev**2)
+
+prev_least_square = 0
+error = (target_points - np.transpose(np.dot(Rt, source_points.T)) + [Ts])
+least_square = np.mean(error**2)
+print(least_square)
+delta = np.abs(least_square - prev_least_square)

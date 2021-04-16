@@ -1,3 +1,5 @@
 {
-    "python.pythonPath": "/home/a/.virtualenvs/dl4cv/bin/python"
+    "python.pythonPath": "/home/a/.virtualenvs/dl4cv/bin/python",
+    "python.linting.pylintEnabled": true,
+    "python.linting.enabled": false
 }

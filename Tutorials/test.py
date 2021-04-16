@@ -120,7 +120,7 @@ HT[:3, :3] = HT_rot_upscaled
 print(HT)
 '''
 
-'''
+
 # transformator
 mouse_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_ransac.ply'
 mouse = o3d.io.read_point_cloud(mouse_path)
@@ -128,16 +128,16 @@ mouse = o3d.io.read_point_cloud(mouse_path)
 o3d.visualization.draw_geometries([mouse])
 mesh_coor = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05)
 mouse_trans = copy.deepcopy(mouse)
-mouse_trans.translate([0, -0.008, -0.008])
+mouse_trans.translate([0.01, -0.01, -0.015])
 o3d.visualization.draw_geometries([mouse, mouse_trans])
 mouse_rot = copy.deepcopy(mouse)
-R = mouse_rot.get_rotation_matrix_from_xyz((0, np.pi / 8, 0))
-mouse_rot.rotate(R, center=mouse_rot.get_center())
-o3d.visualization.draw_geometries([mouse, mouse_trans, mouse_rot])
-o3d.io.write_point_cloud('/home/a/mouse_data_set/mouse_data_scene/senthetic/mouse.ply', mouse_rot, write_ascii=True)
+R = mouse_rot.get_rotation_matrix_from_xyz((-np.pi / 8, np.pi / 8, np.pi / 8))
+mouse_trans.rotate(R, center=mouse_trans.get_center())
+o3d.visualization.draw_geometries([mouse, mouse_trans])
+o3d.io.write_point_cloud('/home/a/mouse_data_set/mouse_data_scene/senthetic/mouse3.ply', mouse_trans, write_ascii=True)
+
+
 '''
-
-
 A = np.array([[4, 2, 5, 0],
               [3, 2, 1, 0],
               [2, 3, 6, 0],
@@ -153,3 +153,4 @@ print(id(sphere_copy))
 sphere.transform(A)
 mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(0.8)
 o3d.visualization.draw_geometries([sphere, mesh])
+'''

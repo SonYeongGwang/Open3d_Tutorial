@@ -57,7 +57,7 @@ scene_pcd = np.asarray(scene.points)
 
 print("Implementing ICP")
 
-T, distance, i = icp(model_pcd, scene_pcd, max_iterations=100, tolerance=0.02)
+T, distance, i = icp(model_pcd, scene_pcd, max_iterations=100, tolerance=0.00005)
 print(T)
 
 model_refine.transform(T)

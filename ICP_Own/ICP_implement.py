@@ -2,6 +2,7 @@ import open3d as o3d
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
+import time
 
 ########################## 0. define required function ##########################
 def argsort(a):
@@ -129,21 +130,105 @@ def Align(source_pts, target_pts, point_num, closest_set):
 
     return Rot, Trsl, transformation
 
+def RefinePose(source_data, target_data, max_iteration):
+    # sample point by voxelization
+    source_downsampled_voxel_indx = source_data.voxel_down_sample(voxel_size=0.1)
+    target_downsampled_voxel_indx = target_data.voxel_down_sample(voxel_size=0.1)
+    number_of_source_points_down = len(np.asarray(source_downsampled_voxel_indx.points))
+    number_of_target_points_down = len(np.asarray(target_downsampled_voxel_indx.points))
+    print("<The number of input data after downsaple> ")
+    print(number_of_source_points_down, number_of_target_points_down)
+    # o3d.visualization.draw_geometries([source_downsampled_voxel_indx])
+
+    ###################### 2. match point cloud data ######################
+    #######################################################################
+    target_kdtree = o3d.geometry.KDTreeFlann(target_downsampled_voxel_indx)
+    num_of_selection = len(np.asarray(source_downsampled_voxel_indx.points)) # The number of points which will be used for calculation
+
+    ######## For visualization in real time ########
+    o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
+    # vis = o3d.visualization.Visualizer()
+    # vis.create_window()
+    # vis.add_geometry(source_data)
+    # vis.add_geometry(target_data)
+
+    max_itr = max_iteration
+    prev_least_square = 0
+    deltas = []
+    time_per_itr = []
+    last_time_sec = time.time()
+    for itr in np.arange(max_itr):
+    # 'closest_pointset' below will have same address with the one inside of the method 'Match'
+        closest_pointset = Match(
+            source_downsampled_voxel_indx, target_kdtree, num_of_selection)
+        line_set = Visualize(source_downsampled_voxel_indx, target_downsampled_voxel_indx, num_of_selection, closest_pointset)
+
+        ###################### 3. align point cloud data #######################
+        ######(for test reason, it doesn't include weighing and rejecting)######
+        ########################################################################
+
+        source_index = np.arange(0, num_of_selection)
+        target_index = closest_pointset
+        source_points, target_points = SelectPointSet(
+            source_index, source_downsampled_voxel_indx, target_index, target_downsampled_voxel_indx)
+
+        if np.shape(source_points) != np.shape(target_points):
+            print("error: The shape of source data and The shape of target data should be same")
+            break
+
+        Rt, Ts, transformation = Align(
+            source_points, target_points, num_of_selection, closest_pointset)
+
+        source_downsampled_voxel_indx.transform(transformation)
+        source_data.transform(transformation)
+        # vis.update_geometry(source_data)
+        # vis.poll_events()
+        # vis.update_renderer()
+        o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
+        error = (target_points - np.transpose(np.dot(Rt, source_points.T)) + [Ts])
+        least_square = np.mean(error**2)
+        print("Iteration:{}, previous:{}, now:{}".format(itr, prev_least_square, least_square))
+        delta = np.abs(least_square - prev_least_square)
+        deltas.append(delta)
+        prev_least_square = least_square
+        if itr == 0:
+            init_error = (target_points - source_points)
+            init_least_square = np.mean(init_error**2)
+            initial_delta = np.abs(init_least_square - least_square)
+            print("initial error:", init_least_square)
+        current_time_sec = time.time()
+        time_spend = current_time_sec - last_time_sec
+        last_time_sec = current_time_sec
+        time_per_itr.append(time_spend)
+
+    deltas[0] = initial_delta
+    # o3d.visualization.draw_geometries([source_data, target_data, line_set])
+    return deltas, time_per_itr
+
 ###################### 1. downsample point cloud data ######################
 ############################################################################
-source_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_ransac.ply'
-target_path = '/home/a/mouse_data_set/mouse_data_scene/senthetic/mouse.ply'
+# source_path = '/home/a/mouse_data_set/mouse_data_scene/senthetic/mouse3.ply'
+# target_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_ransac.ply'
+
+source_path = '/home/a/Open3d_Tutorial/ICP/cloud_bin_0.pcd'
+target_path = '/home/a/Open3d_Tutorial/ICP/cloud_bin_1.pcd'
+
+# source_path = '/home/a/mouse_data_set/mouse_data_main/RealSizeMouseModel.ply'
+# target_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply'
 
 source_data = o3d.io.read_point_cloud(source_path) # read point cloud data
 target_data = o3d.io.read_point_cloud(target_path)
+over_looking_transform = [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]
+source_data.transform(over_looking_transform)
+target_data.transform(over_looking_transform)
 source_data.paint_uniform_color([1, 0.0, 0.0])     # paint uniform color
 target_data.paint_uniform_color([0.0, 1, 0.0])
-mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1)
+mesh = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.08)
 
 # visualize inital pcd
 source_data.orient_normals_consistent_tangent_plane(10) # make normals oriented to uniform direction
-# o3d.visualization.draw_geometries([source_data, target_data])
-
+o3d.visualization.draw_geometries([source_data, target_data])
+'''
 # sample point by random index
 sampling_ratio = 0.2
 number_of_points = len(np.asarray(source_data.points))
@@ -151,65 +236,15 @@ print("The number of input data: ",number_of_points)
 indx = np.random.choice(np.arange(0, number_of_points), size=(int(number_of_points * sampling_ratio), ), replace=False)
 source_downsampled_random_indx = source_data.select_by_index(indx)
 # o3d.visualization.draw_geometries([source_downsampled_random_indx])
-
-# sample point by voxelization
-source_downsampled_voxel_indx = source_data.voxel_down_sample(voxel_size=0.008)
-target_downsampled_voxel_indx = target_data.voxel_down_sample(voxel_size=0.008)
-number_of_points_down = len(np.asarray(source_downsampled_voxel_indx.points))
-print("The number of input data after downsaple: ",number_of_points_down)
-# o3d.visualization.draw_geometries([source_downsampled_voxel_indx])
-
-
-###################### 2. match point cloud data ######################
-#######################################################################
-target_kdtree = o3d.geometry.KDTreeFlann(target_downsampled_voxel_indx)
-num_of_selection = len(np.asarray(source_downsampled_voxel_indx.points)) # The number of neighbors to find
-
-max_iteration = 17
-prev_least_square = 0
-deltas = []
-for itr in np.arange(max_iteration):
-# 'closest_pointset' below will have same address with the one inside of the method 'Match'
-    closest_pointset = Match(
-        source_downsampled_voxel_indx, target_kdtree, num_of_selection)
-    # line_set = Visualize(source_downsampled_voxel_indx, target_downsampled_voxel_indx,
-    #         num_of_selection, closest_pointset)
-
-    ###################### 3. align point cloud data #######################
-    ######(for test reason, it doesn't include weighing and rejecting)######
-    ########################################################################
-
-    source_index = np.arange(0, num_of_selection)
-    target_index = closest_pointset
-    source_points, target_points = SelectPointSet(
-        source_index, source_downsampled_voxel_indx, target_index, target_downsampled_voxel_indx)
-    
-    if np.shape(source_points) != np.shape(target_points):
-        print("error: The shape of source data and The shape of target data should be same")
-        break
-
-    Rt, Ts, transformation = Align(
-        source_points, target_points, num_of_selection, closest_pointset)
-
-    source_downsampled_voxel_indx.transform(transformation)
-    # o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
-    error = (target_points - np.transpose(np.dot(Rt, source_points.T)) + [Ts])
-    least_square = np.mean(error**2)
-    print("Iteration:{}, previous:{}, now:{}".format(itr, prev_least_square, least_square))
-    delta = np.abs(least_square - prev_least_square)
-    deltas.append(delta)
-    prev_least_square = least_square
-    if itr == 0:
-        init_error = (target_points - source_points)
-        init_least_square = np.mean(init_error**2)
-        initial_delta = np.abs(init_least_square - least_square)
-        print("initial error:", init_least_square)
-
-deltas[0] = initial_delta
-
+'''
+max_iteration = 50
+# Fine refined Rotation and Translation
+delta_error, time_per_iteration = RefinePose(source_data, target_data, max_iteration)
 plt.figure()
-plt.plot(np.arange(max_iteration), deltas)
+plt.plot(np.arange(max_iteration), delta_error)
 plt.xlabel("The number of iterations")
 plt.ylabel("MSE")
 plt.show()
-o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx])
+total_time_spend = np.sum(time_per_iteration)
+print("Total iteration running time: {}s".format(total_time_spend))
+# o3d.visualization.draw_geometries([source_data, target_data])

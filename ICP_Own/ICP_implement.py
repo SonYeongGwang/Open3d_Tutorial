@@ -132,8 +132,8 @@ def Align(source_pts, target_pts, point_num, closest_set):
 
 def RefinePose(source_data, target_data, max_iteration):
     # sample point by voxelization
-    source_downsampled_voxel_indx = source_data.voxel_down_sample(voxel_size=0.1)
-    target_downsampled_voxel_indx = target_data.voxel_down_sample(voxel_size=0.1)
+    source_downsampled_voxel_indx = source_data.voxel_down_sample(voxel_size=0.008)
+    target_downsampled_voxel_indx = target_data.voxel_down_sample(voxel_size=0.008)
     number_of_source_points_down = len(np.asarray(source_downsampled_voxel_indx.points))
     number_of_target_points_down = len(np.asarray(target_downsampled_voxel_indx.points))
     print("<The number of input data after downsaple> ")
@@ -147,10 +147,10 @@ def RefinePose(source_data, target_data, max_iteration):
 
     ######## For visualization in real time ########
     o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
-    # vis = o3d.visualization.Visualizer()
-    # vis.create_window()
-    # vis.add_geometry(source_data)
-    # vis.add_geometry(target_data)
+    vis = o3d.visualization.Visualizer()
+    vis.create_window()
+    vis.add_geometry(source_data)
+    vis.add_geometry(target_data)
 
     max_itr = max_iteration
     prev_least_square = 0
@@ -161,7 +161,7 @@ def RefinePose(source_data, target_data, max_iteration):
     # 'closest_pointset' below will have same address with the one inside of the method 'Match'
         closest_pointset = Match(
             source_downsampled_voxel_indx, target_kdtree, num_of_selection)
-        line_set = Visualize(source_downsampled_voxel_indx, target_downsampled_voxel_indx, num_of_selection, closest_pointset)
+        # line_set = Visualize(source_downsampled_voxel_indx, target_downsampled_voxel_indx, num_of_selection, closest_pointset)
 
         ###################### 3. align point cloud data #######################
         ######(for test reason, it doesn't include weighing and rejecting)######
@@ -181,10 +181,10 @@ def RefinePose(source_data, target_data, max_iteration):
 
         source_downsampled_voxel_indx.transform(transformation)
         source_data.transform(transformation)
-        # vis.update_geometry(source_data)
-        # vis.poll_events()
-        # vis.update_renderer()
-        o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
+        vis.update_geometry(source_data)
+        vis.poll_events()
+        vis.update_renderer()
+        # o3d.visualization.draw_geometries([source_downsampled_voxel_indx, target_downsampled_voxel_indx, line_set])
         error = (target_points - np.transpose(np.dot(Rt, source_points.T)) + [Ts])
         least_square = np.mean(error**2)
         print("Iteration:{}, previous:{}, now:{}".format(itr, prev_least_square, least_square))
@@ -207,11 +207,11 @@ def RefinePose(source_data, target_data, max_iteration):
 
 ###################### 1. downsample point cloud data ######################
 ############################################################################
-# source_path = '/home/a/mouse_data_set/mouse_data_scene/senthetic/mouse3.ply'
-# target_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_ransac.ply'
+source_path = '/home/a/mouse_data_set/mouse_data_scene/senthetic/mouse3.ply'
+target_path = '/home/a/mouse_data_set/mouse_data_main/mouse_model_ransac.ply'
 
-source_path = '/home/a/Open3d_Tutorial/ICP/cloud_bin_0.pcd'
-target_path = '/home/a/Open3d_Tutorial/ICP/cloud_bin_1.pcd'
+# source_path = '/home/a/Open3d_Tutorial/ICP/cloud_bin_0.pcd'
+# target_path = '/home/a/Open3d_Tutorial/ICP/cloud_bin_1.pcd'
 
 # source_path = '/home/a/mouse_data_set/mouse_data_main/RealSizeMouseModel.ply'
 # target_path = '/home/a/mouse_data_set/mouse_data_scene/cropped/mouse_scene_crop.ply'
@@ -219,6 +219,7 @@ target_path = '/home/a/Open3d_Tutorial/ICP/cloud_bin_1.pcd'
 source_data = o3d.io.read_point_cloud(source_path) # read point cloud data
 target_data = o3d.io.read_point_cloud(target_path)
 over_looking_transform = [[1, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 1]]
+# flip_transform = [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]
 source_data.transform(over_looking_transform)
 target_data.transform(over_looking_transform)
 source_data.paint_uniform_color([1, 0.0, 0.0])     # paint uniform color
@@ -237,7 +238,7 @@ indx = np.random.choice(np.arange(0, number_of_points), size=(int(number_of_poin
 source_downsampled_random_indx = source_data.select_by_index(indx)
 # o3d.visualization.draw_geometries([source_downsampled_random_indx])
 '''
-max_iteration = 50
+max_iteration = 20
 # Fine refined Rotation and Translation
 delta_error, time_per_iteration = RefinePose(source_data, target_data, max_iteration)
 plt.figure()

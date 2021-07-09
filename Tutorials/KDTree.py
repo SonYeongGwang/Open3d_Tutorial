@@ -1,7 +1,7 @@
 import open3d as o3d
 import numpy as np
 
-pcd = o3d.io.read_point_cloud('./eagle.ply')
+pcd = o3d.io.read_point_cloud('Tutorials/eagle.ply')
 pcd = pcd.voxel_down_sample(voxel_size=0.2)
 o3d.visualization.draw_geometries([pcd])
 pcd_tree = o3d.geometry.KDTreeFlann(pcd)

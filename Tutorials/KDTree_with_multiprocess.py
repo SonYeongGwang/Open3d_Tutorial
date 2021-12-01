@@ -16,6 +16,7 @@ from multiprocessing import Pool
 def search(idx):
     global pcd_tree
     [k, idxs, _] = pcd_tree.search_knn_vector_3d(pcd.points[idx], 100)
+    print(k)
     return np.asarray(idxs)
 
 t1 = time.time()

@@ -19,6 +19,10 @@ cup2end = np.array([[1,  0, 0, 0],
                     [ 0, 0, 1, -0.2535],
                     [ 0, 0, 0, 1]])
 
+eye2end = np.dot(end2cam, cam2eye)
+eye2end = np.linalg.inv(eye2end)
+print(eye2end)
+
 ## target matrix
 cup2eye = np.dot(np.dot(cup2end, end2cam), cam2eye)
 
